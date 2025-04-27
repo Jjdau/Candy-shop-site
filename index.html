@@ -45,12 +45,21 @@
     html {
       scroll-behavior: smooth;
     }
-    /* Logo size variables */
+    /* Logo size and position variables */
     :root {
-      --logo-size-navbar: 10rem; /* ~32px, matches text-2xl (~24px); try 1.75rem (~28px) or 2.25rem (~36px) */
-      --logo-size-hero-mobile: 15rem; /* ~56px, matches text-4xl (~48px); try 3rem (~48px) or 4rem (~64px) */
-      --logo-size-hero-desktop: 25rem; /* ~112px, matches text-6xl (~96px); try 6rem (~96px) or 8rem (~128px) */
-      --logo-size-footer: 2rem; /* ~32px, unchanged; adjust if needed */
+      --logo-size-navbar: 12rem; /* ~32px, matches text-2xl (~24px); try 1.75rem (~28px), 2.25rem (~36px) */
+      --logo-size-hero-mobile: 25rem; /* ~56px, matches text-4xl (~48px); try 3rem (~48px), 4rem (~64px) */
+      --logo-size-hero-desktop: 20rem; /* ~112px, matches text-6xl (~96px); try 6rem (~96px), 8rem (~128px) */
+      --logo-size-footer: 12rem; /* ~32px, unchanged; adjust if needed */
+      --logo-top-navbar: 0px; /* Move up/down: e.g., -10px (up), 10px (down) */
+      --logo-left-navbar: 0; /* Move left/right: e.g., -10px (left), 10px (right) */
+      --logo-top-hero:20px; /* Default: slight upward adjustment; try -20px, 0, 10px */
+      --logo-left-hero: 0; /* Center by default; try -20px, 20px */
+      --logo-top-footer: 0; /* Adjust: e.g., -10px (up), 10px (down) */
+      --logo-left-footer: 0; /* Adjust: e.g., -10px (left), 10px (right) */
+    }
+    .logo {
+      position: relative;
     }
   </style>
 </head>
@@ -75,12 +84,16 @@
             <div className="flex justify-between h-16">
               <div className="flex items-center">
                 <a href="/">
-                  {/* Navbar logo: Uses --logo-size-navbar (~32px) */}
+                  {/* Navbar logo: Uses --logo-size-navbar (~32px), --logo-top-navbar, --logo-left-navbar */}
                   <img 
                     src="assets/logo.png" 
                     alt="The Candy Shop LLC" 
-                    style={{ height: 'var(--logo-size-navbar)' }} 
-                    className="w-auto max-w-xs" 
+                    style={{ 
+                      height: 'var(--logo-size-navbar)', 
+                      top: 'var(--logo-top-navbar)', 
+                      left: 'var(--logo-left-navbar)' 
+                    }} 
+                    className="w-auto max-w-xs logo" 
                     onError={(e) => { 
                       console.error("Logo not found: assets/logo.png"); 
                       e.target.src = "https://via.placeholder.com/150x32?text=Logo"; 
@@ -120,12 +133,16 @@
     const Hero = () => (
       <section id="home" className="gradient-bg text-white py-20 text-center">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Hero logo: Uses --logo-size-hero-mobile (~56px), --logo-size-hero-desktop (~112px) */}
+          {/* Hero logo: Uses --logo-size-hero-mobile (~56px), --logo-size-hero-desktop (~112px), --logo-top-hero, --logo-left-hero */}
           <img 
             src="assets/logo.png" 
             alt="The Candy Shop LLC" 
-            className="w-auto max-w-md mx-auto candy-bounce md:h-[var(--logo-size-hero-desktop)]" 
-            style={{ height: 'var(--logo-size-hero-mobile)' }} 
+            className="w-auto max-w-md mx-auto candy-bounce md:h-[var(--logo-size-hero-desktop)] logo" 
+            style={{ 
+              height: 'var(--logo-size-hero-mobile)', 
+              top: 'var(--logo-top-hero)', 
+              left: 'var(--logo-left-hero)' 
+            }} 
             onError={(e) => { 
               console.error("Logo not found: assets/logo.png"); 
               e.target.src = "https://via.placeholder.com/300x96?text=Logo"; 
@@ -235,11 +252,11 @@
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl font-bold text-center mb-8 candy-text">Contact Us</h2>
           <div className="max-w-lg mx-auto text-center">
-            <p className="text-lg text-gray-600 mb-4"><i className="fas fa-envelope mr-2"></i> <a href="mailto:support@crcandyshop.com" className="text-pink-500 hover:underline">support@crcandyshop.com</a></p>
+            <p className="text-lg text-gray-600 mb-4"><i className="fas fa-envelope mr-2"></i> <a href="mailto:TheCandyShop319@gmail.com" className="text-pink-500 hover:underline">TheCandyShop319@gmail.com</a></p>
             <p className="text-lg text-gray-600 mb-4"><i className="fas fa-map-marker-alt mr-2"></i> Follow our mobile shop on social media!</p>
             <div className="flex justify-center space-x-4">
-              <a href="https://facebook.com/yourpage" className="text-2xl text-pink-500 hover:text-pink-700"><i className="fab fa-facebook"></i></a>
-              <a href="https://instagram.com/yourpage" className="text-2xl text-pink-500 hover:text-pink-700"><i className="fab fa-instagram"></i></a>
+              <a href="https://www.facebook.com/people/The-Candy-Shop-LLC/61575132523484/?mibextid=wwXIfr&rdid=3cOEIee04vVSq5p1&share_url=https%3A%2F%2Fwww.facebook.com%2Fshare%2F1BoufQb6Vn%2F%3Fmibextid%3DwwXIfr" className="text-2xl text-pink-500 hover:text-pink-700"><i className="fab fa-facebook"></i></a>
+              <a href="https://www.instagram.com/crcandyshop?igsh=M2JvZTRiazFxMDRv&utm_source=qr" className="text-2xl text-pink-500 hover:text-pink-700"><i className="fab fa-instagram"></i></a>
               <a href="https://x.com/yourpage" className="text-2xl text-pink-500 hover:text-pink-700"><i className="fab fa-x-twitter"></i></a>
               <a href="https://tiktok.com/@yourpage" className="text-2xl text-pink-500 hover:text-pink-700"><i className="fab fa-tiktok"></i></a>
             </div>
@@ -252,12 +269,16 @@
       <footer className="bg-pink-500 text-white py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-center mb-4">
-            {/* Footer logo: Uses --logo-size-footer (~32px) */}
+            {/* Footer logo: Uses --logo-size-footer (~32px), --logo-top-footer, --logo-left-footer */}
             <img 
               src="assets/logo.png" 
               alt="The Candy Shop LLC" 
-              style={{ height: 'var(--logo-size-footer)' }} 
-              className="w-auto max-w-xs" 
+              style={{ 
+                height: 'var(--logo-size-footer)', 
+                top: 'var(--logo-top-footer)', 
+                left: 'var(--logo-left-footer)' 
+              }} 
+              className="w-auto max-w-xs logo" 
               onError={(e) => { 
                 console.error("Logo not found: assets/logo.png"); 
                 e.target.src = "https://via.placeholder.com/150x32?text=Logo"; 
