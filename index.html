@@ -45,21 +45,33 @@
     html {
       scroll-behavior: smooth;
     }
-    /* Logo size and position variables */
+    /* Logo size, margin, gap, and padding variables */
     :root {
-      --logo-size-navbar: 12rem; /* ~32px, matches text-2xl (~24px); try 1.75rem (~28px), 2.25rem (~36px) */
-      --logo-size-hero-mobile: 25rem; /* ~56px, matches text-4xl (~48px); try 3rem (~48px), 4rem (~64px) */
-      --logo-size-hero-desktop: 20rem; /* ~112px, matches text-6xl (~96px); try 6rem (~96px), 8rem (~128px) */
-      --logo-size-footer: 12rem; /* ~32px, unchanged; adjust if needed */
-      --logo-top-navbar: 0px; /* Move up/down: e.g., -10px (up), 10px (down) */
-      --logo-left-navbar: 0; /* Move left/right: e.g., -10px (left), 10px (right) */
-      --logo-top-hero:20px; /* Default: slight upward adjustment; try -20px, 0, 10px */
-      --logo-left-hero: 0; /* Center by default; try -20px, 20px */
-      --logo-top-footer: 0; /* Adjust: e.g., -10px (up), 10px (down) */
-      --logo-left-footer: 0; /* Adjust: e.g., -10px (left), 10px (right) */
+      --logo-size-navbar: 12rem; /* ~192px; capped by max-height */
+      --logo-size-hero-mobile: 25rem; /* ~400px; capped by max-width */
+      --logo-size-hero-desktop: 20rem; /* ~320px; capped by max-width */
+      --logo-size-footer: 12rem; /* ~192px; capped by max-height */
+      --logo-margin-x-navbar: -5px; /* Left/right: e.g., -10px (left), 10px (right) */
+      --logo-margin-y-navbar: 0; /* Up/down: e.g., -10px (up), 10px (down) */
+      --logo-margin-x-hero: 0; /* Left/right: e.g., -20px, 20px */
+      --logo-margin-y-hero: 20px; /* Up/down: e.g., -20px, 40px */
+      --logo-margin-x-footer: 0; /* Left/right: e.g., -10px, 10px */
+      --logo-margin-y-footer: 0; /* Up/down: e.g., -10px, 10px */
+      --logo-gap-navbar: 10px; /* Space between logo and other elements */
+      --logo-gap-hero: 15px; /* Space in hero flex container */
+      --logo-gap-footer: 10px; /* Space in footer */
+      --logo-padding-navbar: 0 15px; /* Container padding */
+      --logo-padding-hero: 30px 0; /* Increased for large logo */
+      --logo-padding-footer: 20px 0; /* Container padding */
+    }
+    .logo-container {
+      display: flex;
+      align-items: center;
+      justify-content: center; /* Center for hero/footer, flex-start for navbar */
     }
     .logo {
-      position: relative;
+      max-height: 80%; /* Prevent overflow in navbar/footer */
+      max-width: 90%; /* Prevent hero logo from overflowing */
     }
   </style>
 </head>
@@ -81,19 +93,19 @@
       return (
         <nav className="bg-pink-500 text-white sticky top-0 z-50 shadow-lg">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between h-16">
-              <div className="flex items-center">
+            <div className="flex justify-between h-16" style={{ gap: 'var(--logo-gap-navbar)', padding: 'var(--logo-padding-navbar)' }}>
+              <div className="logo-container" style={{ justifyContent: 'flex-start' }}>
                 <a href="/">
-                  {/* Navbar logo: Uses --logo-size-navbar (~32px), --logo-top-navbar, --logo-left-navbar */}
+                  {/* Navbar logo: Uses --logo-size-navbar, --logo-margin-x/y-navbar */}
                   <img 
                     src="assets/logo.png" 
                     alt="The Candy Shop LLC" 
                     style={{ 
                       height: 'var(--logo-size-navbar)', 
-                      top: 'var(--logo-top-navbar)', 
-                      left: 'var(--logo-left-navbar)' 
+                      marginLeft: 'var(--logo-margin-x-navbar)', 
+                      marginTop: 'var(--logo-margin-y-navbar)' 
                     }} 
-                    className="w-auto max-w-xs logo" 
+                    className="w-auto logo" 
                     onError={(e) => { 
                       console.error("Logo not found: assets/logo.png"); 
                       e.target.src = "https://via.placeholder.com/150x32?text=Logo"; 
@@ -132,16 +144,16 @@
 
     const Hero = () => (
       <section id="home" className="gradient-bg text-white py-20 text-center">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Hero logo: Uses --logo-size-hero-mobile (~56px), --logo-size-hero-desktop (~112px), --logo-top-hero, --logo-left-hero */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col items-center logo-container" style={{ gap: 'var(--logo-gap-hero)', padding: 'var(--logo-padding-hero)' }}>
+          {/* Hero logo: Uses --logo-size-hero-mobile/desktop, --logo-margin-x/y-hero */}
           <img 
             src="assets/logo.png" 
             alt="The Candy Shop LLC" 
-            className="w-auto max-w-md mx-auto candy-bounce md:h-[var(--logo-size-hero-desktop)] logo" 
+            className="w-auto candy-bounce md:h-[var(--logo-size-hero-desktop)] logo" 
             style={{ 
               height: 'var(--logo-size-hero-mobile)', 
-              top: 'var(--logo-top-hero)', 
-              left: 'var(--logo-left-hero)' 
+              marginLeft: 'var(--logo-margin-x-hero)', 
+              marginTop: 'var(--logo-margin-y-hero)' 
             }} 
             onError={(e) => { 
               console.error("Logo not found: assets/logo.png"); 
@@ -267,18 +279,18 @@
 
     const Footer = () => (
       <footer className="bg-pink-500 text-white py-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-center mb-4">
-            {/* Footer logo: Uses --logo-size-footer (~32px), --logo-top-footer, --logo-left-footer */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col items-center logo-container" style={{ gap: 'var(--logo-gap-footer)', padding: 'var(--logo-padding-footer)' }}>
+          <div className="flex justify-center">
+            {/* Footer logo: Uses --logo-size-footer, --logo-margin-x/y-footer */}
             <img 
               src="assets/logo.png" 
               alt="The Candy Shop LLC" 
               style={{ 
                 height: 'var(--logo-size-footer)', 
-                top: 'var(--logo-top-footer)', 
-                left: 'var(--logo-left-footer)' 
+                marginLeft: 'var(--logo-margin-x-footer)', 
+                marginTop: 'var(--logo-margin-y-footer)' 
               }} 
-              className="w-auto max-w-xs logo" 
+              className="w-auto logo" 
               onError={(e) => { 
                 console.error("Logo not found: assets/logo.png"); 
                 e.target.src = "https://via.placeholder.com/150x32?text=Logo"; 
