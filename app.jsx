@@ -142,11 +142,11 @@ const NavBar = ({ adminMode, setAdminMode }) => {
   return (
     <>
       <nav className="bg-pink-500 text-white sticky top-0 z-50 shadow-lg">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16" style={{ gap: 'var(--logo-gap-navbar)', padding: 'var(--logo-padding-navbar)' }}>
-            <div className="logo-container" style={{ justifyContent: 'flex-start' }}>
-              <div onClick={handleLogoClick} style={{ cursor: 'pointer' }}>
-                <img src="assets/logo.png" alt="The Candy Shop LLC" style={{ height: 'var(--logo-size-navbar)', marginLeft: 'var(--logo-margin-x-navbar)', marginTop: 'var(--logo-margin-y-navbar)' }} className="w-auto logo" onError={(e) => { e.target.src = "https://via.placeholder.com/150x32?text=Logo"; }} />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 navbar-container">
+          <div className="flex justify-between h-16">
+            <div className="navbar-logo-container">
+              <div onClick={handleLogoClick} className="cursor-pointer">
+                <img src="assets/logo.png" alt="The Candy Shop LLC" className="w-auto logo navbar-logo" onError={(e) => { e.target.src = "https://via.placeholder.com/150x32?text=Logo"; }} />
               </div>
             </div>
             <div className="hidden md:flex space-x-4 items-center">
@@ -197,8 +197,8 @@ const NavBar = ({ adminMode, setAdminMode }) => {
 /** Hero Component */
 const Hero = () => (
   <section id="home" className="gradient-bg text-white py-20 text-center">
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col items-center logo-container" style={{ gap: 'var(--logo-gap-hero)', padding: 'var(--logo-padding-hero)' }}>
-      <img src="assets/logo.png" alt="The Candy Shop LLC" className="w-auto candy-bounce md:h-[var(--logo-size-hero-desktop)] logo" style={{ height: 'var(--logo-size-hero-mobile)', marginLeft: 'var(--logo-margin-x-hero)', marginTop: 'var(--logo-margin-y-hero)' }} onError={(e) => { e.target.src = "https://via.placeholder.com/300x96?text=Logo"; }} />
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col items-center hero-container">
+      <img src="assets/logo.png" alt="The Candy Shop LLC" className="w-auto candy-bounce hero-logo logo" onError={(e) => { e.target.src = "https://via.placeholder.com/300x96?text=Logo"; }} />
       <p className="mt-4 text-lg md:text-2xl candy-text">Your Mobile Candy & Convenience Store!</p>
       <p className="mt-2 text-md md:text-lg candy-text">Bringing Sweet Treats to You!</p>
       <a href="#contact" className="mt-6 inline-block bg-yellow-400 text-black px-6 py-3 rounded-full font-bold hover:bg-yellow-500 candy-text">Get in Touch</a>
@@ -438,17 +438,19 @@ const Reviews = ({ adminMode }) => {
           <div className="relative">
             <div className="bg-white p-6 rounded-lg shadow-lg text-center">
               <div className="text-yellow-400 mb-2 flex justify-center">
-                {Array.from({ length: Math.floor(reviews[currentIndex]?.rating || 0) }, (_, i) => (
-                  <svg key={i} className="w-5 h-5 fill-current" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
-                  </svg>
-                ))}
-                {(reviews[currentIndex]?.rating || 0) % 1 !== 0 && (
+                {reviews[currentIndex]?.rating ? (
+                  Array.from({ length: Math.floor(reviews[currentIndex].rating) }, (_, i) => (
+                    <svg key={i} className="w-5 h-5 fill-current" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
+                    </svg>
+                  ))
+                ) : null}
+                {(reviews[currentIndex]?.rating % 1 !== 0) && (
                   <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                     <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" clipPath="url(#half)"/>
                     <defs><clipPath id="half"><rect x="0" y="0" width="12" height="24"/></clipPath></defs>
                   </svg>
-                ))}
+                )}
               </div>
               <p className="text-gray-600 mb-4">"{reviews[currentIndex]?.comment || 'No reviews yet'}"</p>
               <p className="font-semibold">{reviews[currentIndex]?.name || 'Anonymous'}</p>
@@ -714,9 +716,9 @@ const Contact = () => (
 /** Footer Component */
 const Footer = () => (
   <footer className="bg-pink-500 text-white py-8">
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col items-center logo-container" style={{ gap: 'var(--logo-gap-footer)', padding: 'var(--logo-padding-footer)' }}>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col items-center footer-container">
       <div className="flex justify-center">
-        <img src="assets/logo.png" alt="The Candy Shop LLC" style={{ height: 'var(--logo-size-footer)', marginLeft: 'var(--logo-margin-x-footer)', marginTop: 'var(--logo-margin-y-footer)' }} className="w-auto logo" onError={(e) => { e.target.src = "https://via.placeholder.com/150x32?text=Logo"; }} />
+        <img src="assets/logo.png" alt="The Candy Shop LLC" className="w-auto logo footer-logo" onError={(e) => { e.target.src = "https://via.placeholder.com/150x32?text=Logo"; }} />
       </div>
       <p className="text-center text-gray-200">© 2025 The Candy Shop LLC. All rights reserved.</p>
       <p className="text-center text-gray-200 mt-2">Visit us at <a href="http://crcandyshop.com" className="underline hover:text-yellow-400">crcandyshop.com</a></p>
@@ -919,7 +921,7 @@ try {
 } catch (error) {
   console.error("Error rendering app:", error);
   document.getElementById("root").innerHTML = `
-    <div style="text-align: center; color: red; padding: 20px;">
+    <div class="error-boundary">
       <h2>Error: Failed to load application</h2>
       <p>${error.message}</p>
       <p>Please check the console for details and contact support.</p>
