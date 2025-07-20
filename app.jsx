@@ -102,7 +102,7 @@ const ImageModal = ({ isOpen, onClose, imageSrc }) => {
     <div className="modal" onClick={onClose}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <img src={imageSrc} alt="Full size" className="w-full h-auto" />
-        <button onClick={onClose}>Close</button>
+        <button onClick={onClose} className="mt-4 bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-700">Close</button>
       </div>
     </div>
   );
@@ -407,7 +407,7 @@ const Reviews = ({ adminMode }) => {
   const [isFormOpen, setIsFormOpen] = React.useState(false);
 
   React.useEffect(() => {
-    const interval = setInterval(() => setCurrentIndex((prev) => (prev + 1) % reviews.length), 5000);
+    const interval = setInterval(() => setCurrentIndex((prev) => (prev + 1) % (reviews.length || 1)), 5000);
     return () => clearInterval(interval);
   }, [reviews]);
 
@@ -666,6 +666,196 @@ const Events = ({ adminMode }) => {
   );
 };
 
+/** Sale Component */
+const Sale = ({ adminMode }) => {
+  const [items, setItems] = React.useState([]);
+  const [modalOpen, setModalOpen] = React.useState(false);
+  const [selectedImage, setSelectedImage] = React.useState(null);
+  const [newItem, setNewItem] = React.useState({ category: "", image: null, imageUrl: "", description: "", price: 0, sold: false });
+  const [editItem, setEditItem] = React.useState(null);
+  const [categoryFilter, setCategoryFilter] = React.useState("All");
+  const [dropdownOpen, setDropdownOpen] = React.useState(false);
+
+  React.useEffect(() => {
+    if (window.firebase && window.firebase.firestore) {
+      const unsubscribe = window.firebase.firestore().collection("sales").onSnapshot((snapshot) => {
+        setItems(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+        console.log("Fetched sales items:", snapshot.docs.map(doc => doc.data()));
+      }, (error) => {
+        console.error("Error fetching sales items:", error);
+      });
+      return () => unsubscribe();
+    } else {
+      console.error("Firebase Firestore not available");
+    }
+  }, []);
+
+  const uploadImage = async (file) => {
+    if (!file) return null;
+    const storageRef = window.firebase.storage().ref();
+    const fileRef = storageRef.child(`sales/${file.name}`);
+    await fileRef.put(file);
+    const url = await fileRef.getDownloadURL();
+    return url;
+  };
+
+  const saveItem = async (item, file) => {
+    let imageUrl = item.imageUrl;
+    if (file) {
+      imageUrl = await uploadImage(file);
+    }
+    const itemData = {
+      category: sanitizeInput(item.category),
+      description: sanitizeInput(item.description),
+      price: parseFloat(item.price) || 0,
+      sold: !!item.sold,
+      imageUrl,
+    };
+    if (item.id) {
+      await window.firebase.firestore().collection("sales").doc(item.id).set(itemData);
+    } else {
+      await window.firebase.firestore().collection("sales").add(itemData);
+    }
+  };
+
+  const handleAddItem = async (e) => {
+    e.preventDefault();
+    if (newItem.category && newItem.description && newItem.price && newItem.image) {
+      await saveItem(newItem, newItem.image);
+      setNewItem({ category: "", image: null, imageUrl: "", description: "", price: 0, sold: false });
+      setDropdownOpen(false);
+    }
+  };
+
+  const handleEditItem = (item) => setEditItem({ ...item, image: null, imageUrl: item.imageUrl });
+
+  const handleEditSubmit = async (e) => {
+    e.preventDefault();
+    if (editItem.category && editItem.description && editItem.price && editItem.imageUrl) {
+      await saveItem(editItem, editItem.image);
+      setEditItem(null);
+    }
+  };
+
+  const handleDeleteItem = async (id) => {
+    await window.firebase.firestore().collection("sales").doc(id).delete();
+    setEditItem(null);
+  };
+
+  const handleImageClick = (src) => {
+    setSelectedImage(src);
+    setModalOpen(true);
+  };
+
+  const categories = ["All", ...new Set(items.map((item) => item.category))];
+
+  const filteredItems = categoryFilter === "All" ? items : items.filter((item) => item.category === categoryFilter);
+
+  return (
+    <section id="sale" className="py-16">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <h2 className="text-3xl font-bold text-center mb-8 candy-text">Sweet Deals</h2>
+        <div className="mb-8">
+          <button onClick={() => setDropdownOpen(!dropdownOpen)} className="bg-pink-500 text-white px-4 py-2 rounded hover:bg-pink-700">
+            {dropdownOpen ? "Close Filter" : "Filter by Category"}
+          </button>
+          {dropdownOpen && (
+            <div className="mt-2">
+              <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} className="w-full p-2 border rounded">
+                {categories.map((category) => (
+                  <option key={category} value={category}>{category}</option>
+                ))}
+              </select>
+            </div>
+          )}
+        </div>
+        <div className="grid md:grid-cols-3 gap-6">
+          {filteredItems.map((item) => (
+            <div key={item.id} className="relative bg-white p-4 rounded-lg shadow-lg">
+              <img src={item.imageUrl} alt={item.description} className="w-full h-48 object-cover rounded-lg cursor-pointer" onClick={() => handleImageClick(item.imageUrl)} onError={(e) => { console.error(`Image load failed for ${item.imageUrl}:`, e); e.target.src = "https://via.placeholder.com/150x150?text=No+Image"; }} />
+              {item.sold && <span className="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded">SOLD</span>}
+              <h3 className="mt-2 text-xl font-semibold">{item.description}</h3>
+              <p className="text-gray-600">Category: {item.category}</p>
+              <p className="text-gray-600">Price: ${parseFloat(item.price).toFixed(2)}</p>
+              {adminMode && (
+                <div className="mt-2 flex space-x-2 justify-center">
+                  <button onClick={() => handleEditItem(item)} className="bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-700">Edit</button>
+                  <button onClick={() => handleDeleteItem(item.id)} className="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-700">Delete</button>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+        {adminMode && !editItem && (
+          <div className="max-w-md mx-auto mt-8">
+            <h3 className="text-2xl font-bold text-center mb-4 candy-text">Add New Item</h3>
+            <form onSubmit={handleAddItem} className="space-y-4">
+              <div>
+                <label htmlFor="item-category" className="block text-gray-600">Category</label>
+                <input id="item-category" type="text" value={newItem.category} onChange={(e) => setNewItem({ ...newItem, category: e.target.value })} className="w-full p-2 border rounded" required autoComplete="off" />
+              </div>
+              <div>
+                <label htmlFor="item-image" className="block text-gray-600">Image</label>
+                <input id="item-image" type="file" accept="image/*" onChange={(e) => setNewItem({ ...newItem, image: e.target.files[0] })} className="w-full p-2 border rounded" required />
+              </div>
+              <div>
+                <label htmlFor="item-description" className="block text-gray-600">Description</label>
+                <input id="item-description" type="text" value={newItem.description} onChange={(e) => setNewItem({ ...newItem, description: e.target.value })} className="w-full p-2 border rounded" required autoComplete="off" />
+              </div>
+              <div>
+                <label htmlFor="item-price" className="block text-gray-600">Price ($)</label>
+                <input id="item-price" type="number" step="0.01" value={newItem.price} onChange={(e) => setNewItem({ ...newItem, price: e.target.value })} className="w-full p-2 border rounded" required autoComplete="off" />
+              </div>
+              <div>
+                <label htmlFor="item-sold" className="block text-gray-600">
+                  <input id="item-sold" type="checkbox" checked={newItem.sold} onChange={(e) => setNewItem({ ...newItem, sold: e.target.checked })} className="mr-2" />
+                  Sold
+                </label>
+              </div>
+              <button type="submit" className="w-full bg-pink-500 text-white p-2 rounded hover:bg-pink-700">Add Item</button>
+            </form>
+          </div>
+        )}
+        {adminMode && editItem && (
+          <div className="max-w-md mx-auto mt-8">
+            <h3 className="text-2xl font-bold text-center mb-4 candy-text">Edit Item</h3>
+            <form onSubmit={handleEditSubmit} className="space-y-4">
+              <div>
+                <label htmlFor="edit-item-category" className="block text-gray-600">Category</label>
+                <input id="edit-item-category" type="text" value={editItem.category} onChange={(e) => setEditItem({ ...editItem, category: e.target.value })} className="w-full p-2 border rounded" required autoComplete="off" />
+              </div>
+              <div>
+                <label htmlFor="edit-item-image" className="block text-gray-600">Image</label>
+                <input id="edit-item-image" type="file" accept="image/*" onChange={(e) => setEditItem({ ...editItem, image: e.target.files[0] })} className="w-full p-2 border rounded" />
+                <p className="text-sm text-gray-500">Current: {editItem.imageUrl}</p>
+              </div>
+              <div>
+                <label htmlFor="edit-item-description" className="block text-gray-600">Description</label>
+                <input id="edit-item-description" type="text" value={editItem.description} onChange={(e) => setEditItem({ ...editItem, description: e.target.value })} className="w-full p-2 border rounded" required autoComplete="off" />
+              </div>
+              <div>
+                <label htmlFor="edit-item-price" className="block text-gray-600">Price ($)</label>
+                <input id="edit-item-price" type="number" step="0.01" value={editItem.price} onChange={(e) => setEditItem({ ...editItem, price: e.target.value })} className="w-full p-2 border rounded" required autoComplete="off" />
+              </div>
+              <div>
+                <label htmlFor="edit-item-sold" className="block text-gray-600">
+                  <input id="edit-item-sold" type="checkbox" checked={editItem.sold} onChange={(e) => setEditItem({ ...editItem, sold: e.target.checked })} className="mr-2" />
+                  Sold
+                </label>
+              </div>
+              <div className="flex space-x-4">
+                <button type="submit" className="flex-1 bg-pink-500 text-white p-2 rounded hover:bg-pink-700">Save</button>
+                <button type="button" onClick={() => setEditItem(null)} className="flex-1 bg-gray-500 text-white p-2 rounded hover:bg-gray-700">Cancel</button>
+              </div>
+            </form>
+          </div>
+        )}
+      </div>
+      <ImageModal isOpen={modalOpen} onClose={() => setModalOpen(false)} imageSrc={selectedImage} />
+    </section>
+  );
+};
+
 /** Contact Component */
 const Contact = () => (
   <section id="contact" className="py-16">
@@ -690,241 +880,59 @@ const Contact = () => (
           <a href="https://www.facebook.com/people/The-Candy-Shop-LLC/61575132523484/" className="text-2xl text-pink-500 hover:text-pink-700">
             <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
               <path d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.879v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.563V12h2.773l-.443 2.89h-2.33v6.987C18.343 21.128 22 16.991 22 12z"/>
-          </svg>
+            </svg>
           </a>
           <a href="https://www.instagram.com/crcandyshop" className="text-2xl text-pink-500 hover:text-pink-700">
             <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path d="M12 2.163c3.204 0 3.584.012 4.85.07 1.366.062 2.633.326 3.608 1.301.975.975 1.24 2.242 1.301 3.608.058 1.266.07 1.646.07 4.85s-.012 3.584-.07 4.85c-.062 1.366-.326 2.633-1.301 3.608-.975.975-2.242 1.24-3.608 1.301-1.266.058-1.646.07-4.85.07s-3.584-.012-4.85-.07c-1.366-.062-2.633-.326-3.608-1.301-.975-.975-1.24-2.242-1.301-3.608-.058-1.266-.07-1.646-.07-4.85s.012-3.584.07-4.85c.062-1.366.326-2.633 1.301-3.608.975-.975 2.242-1.24 3.608-1.301 1.266-.058 1.646-.07 4.85-.07zM12 0C8.741 0 8.332.014 7.052.072 5.771.13 4.406.426 3.182 1.65 1.958 2.873 1.662 4.239 1.604 5.52 1.546 6.801 1.532 7.21 1.532 12s.014 5.199.072 6.48c.058 1.281.354 2.647 1.578 3.87 1.224 1.224 2.59 1.52 3.87 1.578 1.281.058 1.69.072 6.48.072s5.199-.014 6.48-.072c1.281-.058 2.647-.354 3.87-1.578 1.224-1.224 1.52-2.59 1.578-3.87.058-1.281.072-1.69.072-6.48s-.014-5.199-.072-6.48c-.058-1.281-.354-2.647-1.578-3.87-1.224-1.224-2.59-1.52-3.87-1.578C16.199.014 15.79 0 12 0z"/>
-              <path d="M12 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zm0 10.162a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.88 1.44 1.44 0 000-2.88z"/>
-            </svg>
-          </a>
-          <a href="https://x.com/yourpage" className="text-2xl text-pink-500 hover:text-pink-700">
-            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
-            </svg>
-          </a>
-          <a href="https://www.tiktok.com/@crcandyshop319?_t=ZT-8vtVXLYmAgN&_r=1" className="text-2xl text-pink-500 hover:text-pink-700">
-            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-5.2 1.74 2.89 2.89 0 012.31-4.81 2.93 2.93 0 01.88.13V9.4a6.84 6.84 0 00-1-.05A6.33 6.33 0 005 20.1a6.34 6.34 0 0010.86-4.43v-7a8.16 8.16 0 004.77 1.52v-3.4a4.85 4.85 0 01-1-.1z"/>
+              <path d="M12 2.163c3.204 0 3.584.012 4.85.07 1.366.062 2.633.326 3.608 1.301.975.975 1.24 2.242 1.301 3.608.058 1.266.07 1.646.07 4.85s-.012 3.584-.07 4.85c-.062 1.366-.326 2.633-1.301 3.608-.975.975-2.242 1.24-3.608 1.301-1.266.058-1.646.07-4.85.07s-3.584-.012-4.85-.07c-1.366-.062-2.633-.326-3.608-1.301-.975-.975-1.24-2.242-1.301-3.608-.058-1.266-.07-1.646-.07-4.85s.012-3.584.07-4.85c.062-1.366.326-2.633 1.301-3.608.975-.975 2.242-1.24 3.608-1.301 1.266-.058 1.646-.07 4.85-.07m0-2.163c-3.259 0-3.667.014-4.947.072-1.524.069-2.917.375-3.999 1.456C1.974 2.61 1.668 4.003 1.6 5.527c-.058 1.28-.072 1.688-.072 4.947s.014 3.667.072 4.947c.069 1.524.375 2.917 1.456 3.999 1.081 1.081 2.475 1.387 3.999 1.456 1.28.058 1.688.072 4.947.072s3.667-.014 4.947-.072c1.524-.069 2.917-.375 3.999-1.456 1.081-1.081 1.387-2.475 1.456-3.999.058-1.28.072-1.688.072-4.947s-.014-3.667-.072-4.947c-.069-1.524-.375-2.917-1.456-3.999-1.081-1.081-2.475-1.387-3.999-1.456-1.28-.058-1.688-.072-4.947-.072zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.441s.645 1.441 1.441 1.441 1.441-.645 1.441-1.441-.645-1.441-1.441-1.441z"/>
             </svg>
           </a>
         </div>
       </div>
     </section>
   );
+};
 
 /** Footer Component */
 const Footer = () => (
   <footer className="bg-pink-500 text-white py-8">
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col items-center footer-container">
-      <div className="flex justify-center">
-        <img src="assets/logo.png" alt="The Candy Shop LLC" className="w-auto logo footer-logo" onError={(e) => { e.target.src = "https://via.placeholder.com/150x32?text=Logo"; }} />
+      <img src="assets/logo.png" alt="The Candy Shop LLC" className="w-auto logo footer-logo" onError={(e) => { e.target.src = "https://via.placeholder.com/150x32?text=Logo"; }} />
+      <p className="mt-4 text-center">© {new Date().getFullYear()} The Candy Shop LLC. All rights reserved.</p>
+      <div className="mt-4 flex space-x-4">
+        <a href="https://www.facebook.com/people/The-Candy-Shop-LLC/61575132523484/" className="text-white hover:text-yellow-400">
+          <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.879v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.563V12h2.773l-.443 2.89h-2.33v6.987C18.343 21.128 22 16.991 22 12z"/>
+          </svg>
+        </a>
+        <a href="https://www.instagram.com/crcandyshop" className="text-white hover:text-yellow-400">
+          <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 2.163c3.204 0 3.584.012 4.85.07 1.366.062 2.633.326 3.608 1.301.975.975 1.24 2.242 1.301 3.608.058 1.266.07 1.646.07 4.85s-.012 3.584-.07 4.85c-.062 1.366-.326 2.633-1.301 3.608-.975.975-2.242 1.24-3.608 1.301-1.266.058-1.646.07-4.85.07s-3.584-.012-4.85-.07c-1.366-.062-2.633-.326-3.608-1.301-.975-.975-1.24-2.242-1.301-3.608-.058-1.266-.07-1.646-.07-4.85s.012-3.584.07-4.85c.062-1.366.326-2.633 1.301-3.608.975-.975 2.242-1.24 3.608-1.301 1.266-.058 1.646-.07 4.85-.07m0-2.163c-3.259 0-3.667.014-4.947.072-1.524.069-2.917.375-3.999 1.456C1.974 2.61 1.668 4.003 1.6 5.527c-.058 1.28-.072 1.688-.072 4.947s.014 3.667.072 4.947c.069 1.524.375 2.917 1.456 3.999 1.081 1.081 2.475 1.387 3.999 1.456 1.28.058 1.688.072 4.947.072s3.667-.014 4.947-.072c1.524-.069 2.917-.375 3.999-1.456 1.081-1.081 1.387-2.475 1.456-3.999.058-1.28.072-1.688.072-4.947s-.014-3.667-.072-4.947c-.069-1.524-.375-2.917-1.456-3.999-1.081-1.081-2.475-1.387-3.999-1.456-1.28-.058-1.688-.072-4.947-.072zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.441s.645 1.441 1.441 1.441 1.441-.645 1.441-1.441-.645-1.441-1.441-1.441z"/>
+          </svg>
+        </a>
       </div>
-      <p className="text-center text-gray-200">© 2025 The Candy Shop LLC. All rights reserved.</p>
-      <p className="text-center text-gray-200 mt-2">Visit us at <a href="http://crcandyshop.com" className="underline hover:text-yellow-400">crcandyshop.com</a></p>
     </div>
   </footer>
 );
 
-/** Sale Component */
-const Sale = ({ adminMode }) => {
-  const [items, setItems] = React.useState([]);
-  const [newItem, setNewItem] = React.useState({ category: "Candy", image: null, imageUrl: "", description: "", price: "", sold: false });
-  const [editItem, setEditItem] = React.useState(null);
-  const [modalOpen, setModalOpen] = React.useState(false);
-  const [selectedImage, setSelectedImage] = React.useState(null);
-
-  React.useEffect(() => {
-    if (window.firebase && window.firebase.firestore) {
-      const unsubscribe = window.firebase.firestore().collection("sales").onSnapshot((snapshot) => {
-        setItems(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-      }, (error) => {
-        console.error("Error fetching sales:", error);
-      });
-      return () => unsubscribe();
-    } else {
-      console.error("Firebase Firestore not available");
-    }
-  }, []);
-
-  const uploadImage = async (file) => {
-    if (!file) return null;
-    const storageRef = window.firebase.storage().ref();
-    const fileRef = storageRef.child(`sales/${file.name}`);
-    await fileRef.put(file);
-    const url = await fileRef.getDownloadURL();
-    return url;
-  };
-
-  const saveItem = async (item, file) => {
-    let imageUrl = item.imageUrl;
-    if (file) {
-      imageUrl = await uploadImage(file);
-    }
-    const itemData = { category: item.category, image: imageUrl, description: item.description, price: parseFloat(item.price), sold: item.sold };
-    if (item.id) {
-      await window.firebase.firestore().collection("sales").doc(item.id).set(itemData);
-    } else {
-      await window.firebase.firestore().collection("sales").add(itemData);
-    }
-  };
-
-  const handleAddItem = async (e) => {
-    e.preventDefault();
-    if (newItem.image && newItem.description && newItem.price) {
-      await saveItem(newItem, newItem.image);
-      setNewItem({ category: "Candy", image: null, imageUrl: "", description: "", price: "", sold: false });
-    }
-  };
-
-  const handleEditItem = (item) => setEditItem({ ...item, image: null, imageUrl: item.image });
-
-  const handleEditSubmit = async (e) => {
-    e.preventDefault();
-    if (editItem.imageUrl && editItem.description && editItem.price) {
-      await saveItem(editItem, editItem.image);
-      setEditItem(null);
-    }
-  };
-
-  const handleDeleteItem = async (id) => {
-    await window.firebase.firestore().collection("sales").doc(id).delete();
-    setEditItem(null);
-  };
-
-  const handleImageClick = (src) => {
-    setSelectedImage(src);
-    setModalOpen(true);
-  };
-
-  return (
-    <section id="sale" className="py-16 bg-gray-100">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h2 className="text-3xl font-bold text-center mb-8 candy-text">Sale Items</h2>
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {items.map((item) => (
-            <div key={item.id} className="bg-white p-4 rounded-lg shadow hover:shadow-lg transition-shadow">
-              <img src={item.image} alt={item.description} className="w-full h-48 object-cover rounded-lg cursor-pointer" onClick={() => handleImageClick(item.image)} onError={(e) => { console.error(`Image load failed for ${item.image}:`, e); e.target.src = "https://via.placeholder.com/150x150?text=No+Image"; }} />
-              <p className="mt-2 text-gray-600"><strong>Category:</strong> {item.category}</p>
-              <p className="mt-1 text-gray-600"><strong>Description:</strong> {item.description}</p>
-              <p className="mt-1 text-gray-600"><strong>Price:</strong> ${item.price.toFixed(2)}</p>
-              {item.sold && <p className="text-red-500 font-bold mt-1">SOLD</p>}
-              {adminMode && (
-                <div className="mt-2 flex space-x-2">
-                  <button onClick={() => handleEditItem(item)} className="bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-700">Edit</button>
-                  <button onClick={() => handleDeleteItem(item.id)} className="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-700">Delete</button>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-        {adminMode && !editItem && (
-          <div className="max-w-md mx-auto mt-8">
-            <h3 className="text-2xl font-bold text-center mb-4 candy-text">Add New Item</h3>
-            <form onSubmit={handleAddItem} className="space-y-4">
-              <div>
-                <label htmlFor="category" className="block text-gray-600">Category</label>
-                <select id="category" value={newItem.category} onChange={(e) => setNewItem({ ...newItem, category: e.target.value })} className="w-full p-2 border rounded" required>
-                  <option value="Candy">Candy</option>
-                  <option value="Clothing">Clothing</option>
-                  <option value="Crafted Items">Crafted Items</option>
-                </select>
-              </div>
-              <div>
-                <label htmlFor="image" className="block text-gray-600">Image</label>
-                <input id="image" type="file" accept="image/*" onChange={(e) => setNewItem({ ...newItem, image: e.target.files[0] })} className="w-full p-2 border rounded" required />
-              </div>
-              <div>
-                <label htmlFor="description" className="block text-gray-600">Description</label>
-                <input id="description" type="text" value={newItem.description} onChange={(e) => setNewItem({ ...newItem, description: e.target.value })} className="w-full p-2 border rounded" required autoComplete="off" />
-              </div>
-              <div>
-                <label htmlFor="price" className="block text-gray-600">Price</label>
-                <input id="price" type="number" step="0.01" value={newItem.price} onChange={(e) => setNewItem({ ...newItem, price: e.target.value })} className="w-full p-2 border rounded" required autoComplete="off" />
-              </div>
-              <div>
-                <label htmlFor="sold" className="block text-gray-600">Sold (One-of-a-Kind)</label>
-                <input id="sold" type="checkbox" checked={newItem.sold} onChange={(e) => setNewItem({ ...newItem, sold: e.target.checked })} className="mr-2" />
-              </div>
-              <button type="submit" className="w-full bg-pink-500 text-white p-2 rounded hover:bg-pink-700">Add Item</button>
-            </form>
-          </div>
-        )}
-        {adminMode && editItem && (
-          <div className="max-w-md mx-auto mt-8">
-            <h3 className="text-2xl font-bold text-center mb-4 candy-text">Edit Item</h3>
-            <form onSubmit={handleEditSubmit} className="space-y-4">
-              <div>
-                <label htmlFor="edit-category" className="block text-gray-600">Category</label>
-                <select id="edit-category" value={editItem.category} onChange={(e) => setEditItem({ ...editItem, category: e.target.value })} className="w-full p-2 border rounded" required>
-                  <option value="Candy">Candy</option>
-                  <option value="Clothing">Clothing</option>
-                  <option value="Crafted Items">Crafted Items</option>
-                </select>
-              </div>
-              <div>
-                <label htmlFor="edit-image" className="block text-gray-600">Image</label>
-                <input id="edit-image" type="file" accept="image/*" onChange={(e) => setEditItem({ ...editItem, image: e.target.files[0] })} className="w-full p-2 border rounded" />
-                <p className="text-sm text-gray-500">Current: {editItem.imageUrl}</p>
-              </div>
-              <div>
-                <label htmlFor="edit-description" className="block text-gray-600">Description</label>
-                <input id="edit-description" type="text" value={editItem.description} onChange={(e) => setEditItem({ ...editItem, description: e.target.value })} className="w-full p-2 border rounded" required autoComplete="off" />
-              </div>
-              <div>
-                <label htmlFor="edit-price" className="block text-gray-600">Price</label>
-                <input id="edit-price" type="number" step="0.01" value={editItem.price} onChange={(e) => setEditItem({ ...editItem, price: e.target.value })} className="w-full p-2 border rounded" required autoComplete="off" />
-              </div>
-              <div>
-                <label htmlFor="edit-sold" className="block text-gray-600">Sold (One-of-a-Kind)</label>
-                <input id="edit-sold" type="checkbox" checked={editItem.sold} onChange={(e) => setEditItem({ ...editItem, sold: e.target.checked })} className="mr-2" />
-              </div>
-              <div className="flex space-x-4">
-                <button type="submit" className="flex-1 bg-pink-500 text-white p-2 rounded hover:bg-pink-700">Save</button>
-                <button type="button" onClick={() => setEditItem(null)} className="flex-1 bg-gray-500 text-white p-2 rounded hover:bg-gray-700">Cancel</button>
-              </div>
-            </form>
-          </div>
-        )}
-      </div>
-      <ImageModal isOpen={modalOpen} onClose={() => setModalOpen(false)} imageSrc={selectedImage} />
-    </section>
-  );
-};
-
 /** App Component */
 const App = () => {
   const [adminMode, setAdminMode] = React.useState(false);
+  console.log("Attempting to render app");
   return (
     <ErrorBoundary>
-      <div>
-        <NavBar adminMode={adminMode} setAdminMode={setAdminMode} />
-        <Hero />
-        <About adminMode={adminMode} />
-        <Gallery adminMode={adminMode} />
-        <Reviews adminMode={adminMode} />
-        <Events adminMode={adminMode} />
-        <Sale adminMode={adminMode} />
-        <Contact />
-        <Footer />
-      </div>
+      <NavBar adminMode={adminMode} setAdminMode={setAdminMode} />
+      <Hero />
+      <About adminMode={adminMode} />
+      <Gallery adminMode={adminMode} />
+      <Reviews adminMode={adminMode} />
+      <Events adminMode={adminMode} />
+      <Sale adminMode={adminMode} />
+      <Contact />
+      <Footer />
     </ErrorBoundary>
   );
 };
 
-/** Render the application */
-try {
-  console.log("Attempting to render app");
-  const root = ReactDOM.createRoot(document.getElementById("root"));
-  root.render(<App />);
-  console.log("App rendered successfully");
-} catch (error) {
-  console.error("Error rendering app:", error);
-  document.getElementById("root").innerHTML = `
-    <div class="error-boundary">
-      <h2>Error: Failed to load application</h2>
-      <p>${error.message}</p>
-      <p>Please check the console for details and contact support.</p>
-    </div>
-  `;
-}
+console.log("App rendered successfully");
+ReactDOM.render(<App />, document.getElementById('root'));
