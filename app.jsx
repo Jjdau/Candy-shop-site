@@ -771,12 +771,12 @@ const Sale = ({ adminMode }) => {
         </div>
         <div className="grid md:grid-cols-3 gap-6">
           {filteredItems.map((item) => (
-            <div key={item.id} className="relative bg-white p-4 rounded-lg shadow-lg">
-              <img src={item.imageUrl} alt={item.description} className="w-full h-48 object-cover rounded-lg cursor-pointer" onClick={() => handleImageClick(item.imageUrl)} onError={(e) => { console.error(`Image load failed for ${item.imageUrl}:`, e); e.target.src = "https://via.placeholder.com/150x150?text=No+Image"; }} />
-              {item.sold && <span className="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded">SOLD</span>}
-              <h3 className="mt-2 text-xl font-semibold">{item.description}</h3>
-              <p className="text-gray-600">Category: {item.category}</p>
-              <p className="text-gray-600">Price: ${parseFloat(item.price).toFixed(2)}</p>
+            <div key={item.id} className="sale-item-container">
+              <img src={item.imageUrl} alt={item.description} className="sale-item-image" onClick={() => handleImageClick(item.imageUrl)} onError={(e) => { console.error(`Image load failed for ${item.imageUrl}:`, e); e.target.src = "https://via.placeholder.com/150x150?text=No+Image"; }} />
+              {item.sold && <span className="sale-item-sold">SOLD</span>}
+              <h3 className="sale-item-title">{item.description}</h3>
+              <p className="sale-item-text">Category: {item.category}</p>
+              <p className="sale-item-text">Price: ${parseFloat(item.price).toFixed(2)}</p>
               {adminMode && (
                 <div className="mt-2 flex space-x-2 justify-center">
                   <button onClick={() => handleEditItem(item)} className="bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-700">Edit</button>
@@ -921,18 +921,21 @@ const App = () => {
   console.log("Attempting to render app");
   return (
     <ErrorBoundary>
-      <NavBar adminMode={adminMode} setAdminMode={setAdminMode} />
-      <Hero />
-      <About adminMode={adminMode} />
-      <Gallery adminMode={adminMode} />
-      <Reviews adminMode={adminMode} />
-      <Events adminMode={adminMode} />
-      <Sale adminMode={adminMode} />
-      <Contact />
-      <Footer />
+      <div>
+        <NavBar adminMode={adminMode} setAdminMode={setAdminMode} />
+        <Hero />
+        <About adminMode={adminMode} />
+        <Gallery adminMode={adminMode} />
+        <Reviews adminMode={adminMode} />
+        <Events adminMode={adminMode} />
+        <Sale adminMode={adminMode} />
+        <Contact />
+        <Footer />
+      </div>
     </ErrorBoundary>
   );
 };
 
-console.log("App rendered successfully");
+console.log("Attempting to render app");
 ReactDOM.render(<App />, document.getElementById('root'));
+console.log("App rendered successfully");
